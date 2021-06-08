@@ -100,7 +100,7 @@ public class MontlyReportPdfWriter {
 
 		for (Payment transaction : transactions) {
 			table.addCell(DATE_FORMAT.format(transaction.getDate()));
-			table.addCell(transaction.getCategory().getName());
+			if (null != transaction.getCategory()) table.addCell(transaction.getCategory().getName());
 			table.addCell(DECIMAL_FORMAT.format(transaction.getAmount()));
 			table.addCell(transaction.getName());
 		}

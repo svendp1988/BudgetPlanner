@@ -1,7 +1,11 @@
 package be.pxl.paj.budgetplanner.entity;
 
-public class Category {
+import javax.persistence.*;
 
+@Entity
+public class Category {
+	@Id
+	@GeneratedValue
 	private long id;
 	private String name;
 

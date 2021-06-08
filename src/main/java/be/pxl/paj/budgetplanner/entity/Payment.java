@@ -1,13 +1,19 @@
 package be.pxl.paj.budgetplanner.entity;
 
+import javax.persistence.*;
 import java.time.LocalDate;
 import java.time.Month;
 
+@Entity
 public class Payment {
+    @Id
+    @GeneratedValue
     private Long id;
+    @ManyToOne
     private Account account;
     private String name;
     private double amount;
+    @OneToOne
     private Category category;
     private LocalDate date;
     private String detail;

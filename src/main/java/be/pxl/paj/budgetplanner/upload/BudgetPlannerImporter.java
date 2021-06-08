@@ -6,6 +6,7 @@ import be.pxl.paj.budgetplanner.dao.CategoryRepository;
 import be.pxl.paj.budgetplanner.entity.Account;
 import be.pxl.paj.budgetplanner.entity.Category;
 import be.pxl.paj.budgetplanner.entity.Payment;
+import be.pxl.paj.budgetplanner.exception.InvalidFileExtensionException;
 import be.pxl.paj.budgetplanner.exception.InvalidLineException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,6 +19,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,18 +27,19 @@ import java.util.Map;
 @Component
 public class BudgetPlannerImporter {
 	private static final Logger LOGGER = LogManager.getLogger(BudgetPlannerImporter.class);
-	private static final PathMatcher CSV_MATCHER = FileSystems.getDefault().getPathMatcher("glob:**/*.csv");
+	private static final PathMatcher CSV_MATCHER = FileSystems.getDefault().getPathMatcher("glob:*.csv");
 
-	// UNCOMMENT WHEN POSSIBLE
-	//@Autowired
+	@Autowired
 	private AccountRepository accountRepository;
 
-	// UNCOMMENT WHEN POSSIBLE
-	//@Autowired
+	@Autowired
 	private CategoryRepository categoryRepository;
 
 	@Async
 	public void readCsv(MultipartFile file) {
+		if (!matchFilePath(file)) {
+			throw new InvalidFileExtensionException("Please upload a csv file!");
+		}
 		Map<String, Account> accounts = new HashMap<>();
 		Map<String, Category> categories = new HashMap<>();
 
@@ -46,11 +49,11 @@ public class BudgetPlannerImporter {
 			while ((line = reader.readLine()) != null) {
 				try {
 					Account account = AccountMapper.map(line);
+					Payment payment = PaymentMapper.map(line, categories);
 					if (accounts.containsKey(account.getIban())) {
-						Payment payment = PaymentMapper.map(line, categories);
 						accounts.get(account.getIban()).addPayment(payment);
 					} else {
-						account.addPayment(PaymentMapper.map(line, categories));
+						account.addPayment(payment);
 						accounts.put(account.getIban(), account);
 					}
 				} catch (InvalidLineException e) {
@@ -66,6 +69,9 @@ public class BudgetPlannerImporter {
 		} catch (IOException e) {
 			LOGGER.fatal("An error occurred while processing the file.");
 		}
+	}
 
+	private boolean matchFilePath(MultipartFile file) {
+		return CSV_MATCHER.matches(Path.of(file.getOriginalFilename()));
 	}
 }
